@@ -6687,7 +6687,21 @@
     return nhCm.items;
   }
   function nhCmEntry(id) { const m = nhCm.items; const e = m && m[id]; return e && typeof e.r === 'number' ? e : null; }
-  function nhCmScore(id) { const e = nhCmEntry(id); return e ? e.r : -1; }
+  function nhCmScore(id) {
+    const e = nhCmEntry(id);
+    if (!e || typeof e.r !== 'number') return -1;
+    const n = e.n;
+    if (!n || n <= 0) return -1;
+    const r = Math.max(1, Math.min(5, e.r));
+    const p = (r - 1) / 4; // normalize 1..5 star scale to [0, 1]
+    const z = 1.0; // 1-sigma interval (~68.3% confidence; z=1.0)
+    const z2 = 1.0; // z^2
+    const denom = 1 + z2 / n;
+    const center = p + z2 / (2 * n);
+    const spread = z * Math.sqrt((p * (1 - p)) / n + z2 / (4 * n * n));
+    const lower = Math.max(0, (center - spread) / denom);
+    return 1 + 4 * lower; // scale back to 1..5 range
+  }
   function nhCmBucket(id) {
     const e = nhCmEntry(id);
     if (!e) return 'none';
